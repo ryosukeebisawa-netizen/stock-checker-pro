@@ -1,30 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 const App = () => {
   const [stockData, setStockData] = useState({ allTime: [], yearToDate: [] });
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState('');
-  const [hasFetched, setHasFetched] = useState(false);
 
   const fetchHighStocks = async () => {
     setLoading(true);
-    setHasFetched(false);
     try {
-      // データの読み込み
       const response = await fetch('/data.json');
       const data = await response.json();
-      
-      // ここで中身をデバッグ用にコンソールへ表示
-      console.log("読み込んだデータ:", data);
+      console.log("読み込みデータ:", data);
       
       setStockData({
         allTime: data.allTime || [],
         yearToDate: data.yearToDate || []
       });
-      setLastUpdated(data.lastUpdated || '更新日時不明');
-      setHasFetched(true);
+      setLastUpdated(data.lastUpdated || '更新なし');
     } catch (error) {
-      console.error("データ取得エラー:", error);
+      console.error("エラー:", error);
+      alert("データの取得に失敗しました");
     } finally {
       setLoading(false);
     }
@@ -36,18 +31,18 @@ const App = () => {
       <button onClick={fetchHighStocks} disabled={loading}>
         {loading ? 'スキャン中...' : '市場をスキャン'}
       </button>
+      <p>最終更新: {lastUpdated}</p>
       
-      {lastUpdated && <p>最終更新: {lastUpdated}</p>}
-
-      {hasFetched && stockData.allTime.length === 0 && (
-        <p>表示できる銘柄がありません（データは読み込めています）</p>
+      <h3>上場来高値銘柄</h3>
+      {stockData.allTime.length > 0 ? (
+        stockData.allTime.map((s, i) => (
+          <div key={i} style={{ borderBottom: '1px solid #ccc', padding: '10px' }}>
+            {s.name} ({s.code}) - {s.price}
+          </div>
+        ))
+      ) : (
+        <p>データがありません。スキャンしてください。</p>
       )}
-
-      {stockData.allTime.map((stock, index) => (
-        <div key={index} style={{ borderBottom: '1px solid #ccc', padding: '10px 0' }}>
-          <strong>{stock.name}</strong> ({stock.code}) - {stock.price}
-        </div>
-      ))}
     </div>
   );
 };
