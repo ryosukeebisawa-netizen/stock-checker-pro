@@ -74,22 +74,23 @@ export default function App() {
   const fetchHighStocks = async () => {
     setLoading(true);
     setHasFetched(false);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const getRandomData = (sourceArray) => {
-      if (Math.random() < 0.2) return [];
-      const shuffled = [...sourceArray].sort(() => 0.5 - Math.random());
-      const count = Math.floor(Math.random() * sourceArray.length) + 1;
-      return shuffled.slice(0, count);
-    };
-
-    setStockData({
-      allTime: getRandomData(mockAllTime),
-      yearToDate: getRandomData(mockYTD)
-    });
-    setLastUpdated(formatDate(new Date()));
-    setHasFetched(true);
-    setLoading(false);
+    try {
+      // 自分のサイト内の public/data.json を取得する
+      const response = await fetch('/data.json');
+      const data = await response.json();
+      
+      setStockData({
+        allTime: data.stocks || [],
+        yearToDate: [] // 必要に応じて調整
+      });
+      setLastUpdated(data.lastUpdated || '更新日時不明');
+      setHasFetched(true);
+    } catch (error) {
+      console.error("データ取得エラー:", error);
+      alert("データの取得に失敗しました。まだデータが準備中の可能性があります。");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleWatchlist = (code) => {
