@@ -23,7 +23,7 @@ def main():
     # 簡易的に結果を保存（実際にはここに計算ロジックを入れる）
     data = {"lastUpdated": f"{datetime.datetime.now().strftime('%Y年%m月%d日 %H時%M分')}", "stocks": []}
     
-    with open("data.json", "w", encoding="utf-8") as f:
+    with open("public/data.json", "w", ...) as f:
         json.dump(data, f, ensure_ascii=False)
 
 if __name__ == "__main__":
