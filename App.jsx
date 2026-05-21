@@ -17,61 +17,50 @@ const mockYTD = [
 ];
 
 export default function App() {
-  // === パスワード認証機能 ===
+  // === 【修正ポイント】状態(Hooks)はすべて一番上で宣言する ===
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
+  
+  const [activeTab, setActiveTab] = useState('allTime'); 
+  const [stockData, setStockData] = useState({ allTime: [], yearToDate: [] });
+  const [loading, setLoading] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState('');
+  const [sortType, setSortType] = useState('default'); 
+  const [watchlist, setWatchlist] = useState([]); 
+  const [excluded, setExcluded] = useState([]); 
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isExcludedOpen, setIsExcludedOpen] = useState(false);
+
+  // === 内部の計算・機能ロジック ===
+  const displayStocks = useMemo(() => {
+    let current = stockData[activeTab] ? [...stockData[activeTab]] : [];
+    current = current.filter(stock => !excluded.includes(stock.code));
+    
+    if (sortType === 'volume') {
+      current.sort((a, b) => b.volMult - a.volMult);
+    } else if (sortType === 'priceDiff') {
+      current.sort((a, b) => parseFloat(b.diffPct) - parseFloat(a.diffPct));
+    } else if (sortType === 'eps') {
+      const parseEps = (epsStr) => {
+        if (epsStr === '黒転') return 999;
+        return parseFloat(epsStr.replace(/[^0-9.-]/g, '')) || 0;
+      };
+      current.sort((a, b) => parseEps(b.eps) - parseEps(a.eps));
+    } else if (sortType === 'yield') {
+      const parseYield = (yStr) => parseFloat(yStr.replace(/[^0-9.-]/g, '')) || 0;
+      current.sort((a, b) => parseYield(b.yield) - parseYield(a.yield));
+    }
+    return current;
+  }, [stockData, activeTab, excluded, sortType]);
 
   const checkPassword = () => {
-    // ※ここでパスワードを設定しています。必要に応じて '1234' を好きな数字に変更できます
     if (password === '1234') { 
       setAuthenticated(true);
     } else {
       alert('パスワードが違います');
     }
   };
-
-  // 認証前のログイン画面
-  if (!authenticated) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 font-sans text-slate-800">
-        <div className="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full text-center">
-          <h2 className="text-2xl font-extrabold mb-2 text-slate-800 flex justify-center items-center gap-2">
-            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-            新高値チェッカー
-          </h2>
-          <p className="text-slate-500 text-sm mb-6">専用ツールにログイン</p>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && checkPassword()}
-            className="border border-slate-300 p-3 rounded-lg w-full mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center tracking-widest text-lg"
-            placeholder="パスワード"
-          />
-          <button
-            onClick={checkPassword}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-md"
-          >
-            ログイン
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // === 以下、チェッカー本体の機能 ===
-  const [activeTab, setActiveTab] = useState('allTime'); 
-  const [stockData, setStockData] = useState({ allTime: [], yearToDate: [] });
-  const [loading, setLoading] = useState(false);
-  const [hasFetched, setHasFetched] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState('');
-  
-  const [sortType, setSortType] = useState('default'); 
-  const [watchlist, setWatchlist] = useState([]); 
-  const [excluded, setExcluded] = useState([]); 
-  
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [isExcludedOpen, setIsExcludedOpen] = useState(false);
 
   const formatDate = (date) => {
     const y = date.getFullYear();
@@ -120,27 +109,38 @@ export default function App() {
     return allUniqueStocks.filter(s => excluded.includes(s.code));
   };
 
-  const displayStocks = useMemo(() => {
-    let current = stockData[activeTab] ? [...stockData[activeTab]] : [];
-    current = current.filter(stock => !excluded.includes(stock.code));
-    
-    if (sortType === 'volume') {
-      current.sort((a, b) => b.volMult - a.volMult);
-    } else if (sortType === 'priceDiff') {
-      current.sort((a, b) => parseFloat(b.diffPct) - parseFloat(a.diffPct));
-    } else if (sortType === 'eps') {
-      const parseEps = (epsStr) => {
-        if (epsStr === '黒転') return 999;
-        return parseFloat(epsStr.replace(/[^0-9.-]/g, '')) || 0;
-      };
-      current.sort((a, b) => parseEps(b.eps) - parseEps(a.eps));
-    } else if (sortType === 'yield') {
-      const parseYield = (yStr) => parseFloat(yStr.replace(/[^0-9.-]/g, '')) || 0;
-      current.sort((a, b) => parseYield(b.yield) - parseYield(a.yield));
-    }
-    return current;
-  }, [stockData, activeTab, excluded, sortType]);
+  // === 画面の表示（レンダリング） ===
+  
+  // ① 認証前のログイン画面
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 font-sans text-slate-800">
+        <div className="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full text-center">
+          <h2 className="text-2xl font-extrabold mb-2 text-slate-800 flex justify-center items-center gap-2">
+            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+            新高値チェッカー
+          </h2>
+          <p className="text-slate-500 text-sm mb-6">専用ツールにログイン</p>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && checkPassword()}
+            className="border border-slate-300 p-3 rounded-lg w-full mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center tracking-widest text-lg"
+            placeholder="パスワード"
+          />
+          <button
+            onClick={checkPassword}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-md"
+          >
+            ログイン
+          </button>
+        </div>
+      </div>
+    );
+  }
 
+  // ② 認証後のメイン画面
   return (
     <div className="min-h-screen bg-slate-100 p-4 md:p-8 flex flex-col items-center font-sans text-slate-800 relative">
       
