@@ -1,0 +1,21 @@
+name: Update Stock Data
+on:
+  schedule:
+    - cron: '30 6 * * 1-5' # 毎日日本時間15:30に実行（UTC 6:30）
+  workflow_dispatch: # 手動でもテスト実行できるようにする
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Fetch and Update Data
+        env:
+          REFRESH_TOKEN: ${{ secrets.JQUANTS_REFRESH_TOKEN }}
+        run: |
+          # ここにデータ取得・計算のPythonプログラムを書きます
+          # 現在はまだ雛形です。次にPythonコードを書きますね。
+          echo "データ取得準備完了"
