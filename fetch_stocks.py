@@ -8,7 +8,6 @@ def get_id_token(refresh_token):
     url = "https://api.jquants.com/v1/token/auth_refresh"
     params = {"refreshtoken": refresh_token}
     res = requests.post(url, params=params)
-    # トークン取得の成否を確認
     if res.status_code != 200:
         raise Exception(f"トークン取得失敗: {res.text}")
     return res.json()["idToken"]
@@ -29,14 +28,30 @@ def main():
     print("認証成功！データを作成します...")
     
     # 2. 本日の日付とテスト用データを作成
+    # アプリ側が期待している構造（allTimeとyearToDateの箱がある形）に合わせます
     now = datetime.datetime.now().strftime('%Y年%m月%d日 %H時%M分')
     
-    # 本番データ取得までは、このテスト用データで動作確認を完了させます
+    # データをしっかり箱に入れて定義します
     sample_stocks = [
-        {"code": "7203", "name": "トヨタ自動車", "price": "3,000円"},
-        {"code": "9984", "name": "ソフトバンクG", "price": "9,000円"}
+        {
+            "code": "7203", "name": "トヨタ自動車", "price": "3,000", 
+            "diff": "+50", "diffPct": "+1.7", "yield": "2.5%", 
+            "volMult": 2.5, "volText": "+150%", "eps": "+20%", 
+            "sales": "+10%", "sector": "輸送用機器", "theme": "自動車"
+        },
+        {
+            "code": "9984", "name": "ソフトバンクG", "price": "9,000", 
+            "diff": "+100", "diffPct": "+1.1", "yield": "0.5%", 
+            "volMult": 2.1, "volText": "+110%", "eps": "黒転", 
+            "sales": "+5%", "sector": "情報・通信", "theme": "AI"
+        }
     ]
-    data = {"lastUpdated": now, "stocks": sample_stocks}
+    
+    data = {
+        "lastUpdated": now,
+        "allTime": sample_stocks,
+        "yearToDate": []
+    }
     
     # 3. フォルダ作成とデータ書き出し
     os.makedirs("public", exist_ok=True)
